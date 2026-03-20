@@ -14,13 +14,13 @@ function PanelSupervisor() {
   const [modoEdicion, setModoEdicion] = useState(false); //Edicion perfil
   const [mostrarModalUsuarios, setMostrarModalUsuarios] = useState(false); //Editar otros usuarios
   const [ordenesGuardadas, setOrdenesGuardadas] = useState([]);
-  const [seleccionadas, setSeleccionadas] = useState([]);
   const [listaUsuarios, setListaUsuarios] = useState([]);
+  //Para la eliminacion de tarjetas de ordenes en administrador
 
-  //pruebas se puede borrar mas adelante
-  useEffect(() => { console.log("Modal cambió:", mostrarModalUsuarios); }, [mostrarModalUsuarios]);
+  const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
+  const [ordenAEliminar, setOrdenAEliminar] = useState(null);
+  const [motivoEliminacion, setMotivoEliminacion] = useState("");
 
-  //
 
   //Datos del usuario
   const [datosPerfil, setDatosPerfil] = useState({
@@ -277,22 +277,8 @@ function PanelSupervisor() {
 
             <div className="contenedor-tarjetas">
               {ordenesGuardadas
-                // esta ayuda a ver las ordnes que no han sido asignadas = .filter((orden) => !orden.asignada)
                 .map((orden) => (
                   <div key={orden.idOrden} className="tarjeta-orden">
-                    <input
-                      type="checkbox"
-                      checked={seleccionadas.includes(orden.idOrden)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSeleccionadas([...seleccionadas, orden.idOrden]);
-                        } else {
-                          setSeleccionadas(
-                            seleccionadas.filter((id) => id !== orden.idOrden)
-                          );
-                        }
-                      }}
-                    />
                     <p>
                       <strong>ID Orden:</strong> {orden.idOrden}
                     </p>
@@ -308,6 +294,14 @@ function PanelSupervisor() {
                     <p>
                       <strong>Valor:</strong> ${orden.valor}
                     </p>
+                    <button
+                      onClick={() => {
+                        setOrdenAEliminar(orden);
+                        setMostrarModalEliminar(true);
+                      }}
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 ))}
             </div>
@@ -321,7 +315,7 @@ function PanelSupervisor() {
 
   //Estructura visual header
   return (
-    //Base
+    //Base visual
     <div className="panel-supervisor">
       <header className="encabezado">
         <div className="logo-titulo">
@@ -355,7 +349,7 @@ function PanelSupervisor() {
 
       {renderContenido()}
 
-      {mostrarModalUsuarios && (
+      {mostrarModalUsuarios && ( //Funciona como ventana emergente y realizar la edicion de rol o eliminacion de ususarios (solo para supervisor)
         <div className="modal-overlay">
           <div className="modal-contenido">
             <h3>Usuarios registrados</h3>
@@ -385,6 +379,60 @@ function PanelSupervisor() {
             <button onClick={() => setMostrarModalUsuarios(false)}>
               Cerrar
             </button>
+          </div>
+        </div>
+      )}
+      
+      {mostrarModalEliminar && ( //Se utiliza para eliminar ordenes
+        <div className="modal-overlay">
+          <div className="modal-contenido">
+            <h3>Eliminar Orden</h3>
+
+            <p>
+              Indicar motivo de la eliminacion de la orden{" "}
+              <strong>{ordenAEliminar?.idOrden}</strong>
+            </p>
+
+            <textarea
+              placeholder="Detalle la causa..."
+              value={motivoEliminacion}
+              onChange={(e) => setMotivoEliminacion(e.target.value)}
+            />
+
+            <div style={{ marginTop: "10px" }}>
+              <button onClick={() => setMostrarModalEliminar(false)}>
+                Cancelar
+              </button>
+              
+              <button
+                onClick={async () => { //Boton de confirmacion de la eliminación envia la informacion al backend y actualiza la pagina
+                  
+                  if (!motivoEliminacion.trim()) {
+                    alert("Debe escribir un motivo para eliminar la orden");
+                    return;
+                  }
+
+                  try {
+                    await axios.delete(
+                      `http://localhost:8080/ordenes/${ordenAEliminar.idOrden}`
+                    );
+
+                    setOrdenesGuardadas((prev) =>
+                      prev.filter((orden) => orden.idOrden !== ordenAEliminar.idOrden)
+                    );
+
+                    setMostrarModalEliminar(false);
+                    setMotivoEliminacion("");
+                    setOrdenAEliminar(null);
+
+                  } catch (error) {
+                    alert("Hubo un error al eliminar la orden");
+                  }
+                }}
+              >
+                Confirmar eliminación
+              </button>
+            </div>
           </div>
         </div>
       )}
