@@ -15,7 +15,7 @@ function PanelSupervisor() {
   const [mostrarModalUsuarios, setMostrarModalUsuarios] = useState(false); //Editar otros usuarios
   const [ordenesGuardadas, setOrdenesGuardadas] = useState([]);
   const [listaUsuarios, setListaUsuarios] = useState([]);
-
+  const [planes, setPlanes] = useState([]);
   //Para la eliminacion de tarjetas de ordenes en administrador
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
   const [ordenAEliminar, setOrdenAEliminar] = useState(null);
@@ -44,11 +44,17 @@ function PanelSupervisor() {
     if (usuarioGuardado) {
       setDatosPerfil(usuarioGuardado);
     }
-    //Almacenamiento de ordenes
+    //traer las ordenes
     axios
       .get("http://localhost:8080/ordenes")
       .then((res) => setOrdenesGuardadas(res.data))
-      .catch((err) => console.error("Error al traer órdenes:", err));
+      .catch((err) => console.error("Error al traer ordenes:", err));
+
+    //llamar planes 
+    axios
+      .get("http://localhost:8080/planes")
+      .then((res) => setPlanes(res.data))
+      .catch((err) => console.error("Error al traer planes:", err));
   }, []);
   //Salir
   const salir = () => {
@@ -269,6 +275,37 @@ function PanelSupervisor() {
         return (
           <div className="contenido-panel">
             <h2 className="titulo-perfil">Planes de Trabajo</h2>
+
+            <table border={"1"} style={{ width: "100%" }}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Estado</th>
+                  <th>Repartidor</th>
+                  <th>Teléfono</th>
+                  <th>Email</th>
+                  <th>Fecha asignación</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {planes.map(plan => (
+                  <tr key={plan.idPlan}>
+                    <td>{plan.idPlan}</td>
+                    <td>{plan.estado}</td>
+                    <td>{plan.nombre}</td>
+                    <td>{plan.telefono}</td>
+                    <td>{plan.email}</td>
+                    <td>{new Date(plan.fecha).toLocaleString()}</td>
+                    <td>
+                      <button style={{ width: "100%" }}>Ver detalles</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
           </div>
         );
 
@@ -525,9 +562,9 @@ function PanelSupervisor() {
                       }
                     );
 
-                    setOrdenesGuardadas((prev) =>
-                      prev.filter((orden) => orden.idOrden !== ordenAEliminar.idOrden)
-                    );
+                    const res = await axios.get("http://localhost:8080/ordenes");
+                    setOrdenesGuardadas(res.data);
+                    ;
 
                     setMostrarModalEliminar(false);
                     setMotivoEliminacion("");
@@ -565,7 +602,7 @@ function PanelSupervisor() {
                   <p><strong>Email:</strong> {usuario.email}</p>
                   <p><strong>Teléfono:</strong> {usuario.telefono}</p>
 
-                  
+
                   <button //Boton para realizar la asignacion de una orden a un usuario
                     onClick={async () => {
                       try {
@@ -582,6 +619,9 @@ function PanelSupervisor() {
                         // refrescar órdenes
                         const res = await axios.get("http://localhost:8080/ordenes");
                         setOrdenesGuardadas(res.data);
+                        //refrescar planes
+                        const resPlanes = await axios.get("http://localhost:8080/planes");
+                        setPlanes(resPlanes.data);
 
                       } catch (error) {
                         alert("Error al asignar órdenes");
