@@ -38,6 +38,17 @@ function PanelSupervisor() {
     rol: "",
   });
 
+  //"Ver detalles" del plan de trabajo muestra las ordenes relacionadas al plan
+  const [mostrarModalPlan, setMostrarModalPlan] = useState(false);
+  const [planSeleccionado, setPlanSeleccionado] = useState(null);
+const ordenesDelPlan = ordenesGuardadas.filter(
+  (orden) =>
+    String(orden.planTrabajo?.idPlanTrabajo) === 
+    String(planSeleccionado?.idPlanTrabajo)
+);
+
+  console.log("ORDENES:", ordenesGuardadas);
+
   //Almacenamiento de la informacion de perfil
   useEffect(() => {
     const usuarioGuardado = JSON.parse(localStorage.getItem("usuario"));
@@ -287,21 +298,32 @@ function PanelSupervisor() {
                   <th>Fecha asignación</th>
                   <th>Acción</th>
                 </tr>
+
               </thead>
 
               <tbody>
                 {planes.map(plan => (
-                  <tr key={plan.idPlan}>
-                    <td>{plan.idPlan}</td>
+
+                  <tr key={plan.idPlanTrabajo}>
+                    <td>{plan.idPlanTrabajo}</td>
                     <td>{plan.estado}</td>
                     <td>{plan.nombre}</td>
                     <td>{plan.telefono}</td>
                     <td>{plan.email}</td>
                     <td>{new Date(plan.fecha).toLocaleString()}</td>
                     <td>
-                      <button style={{ width: "100%" }}>Ver detalles</button>
+                      <button
+                        style={{ width: "100%" }}
+                        onClick={() => {
+                          setPlanSeleccionado(plan);
+                          setMostrarModalPlan(true);
+                        }}
+                      >
+                        Ver detalles
+                      </button>
                     </td>
                   </tr>
+
                 ))}
               </tbody>
             </table>
@@ -636,6 +658,38 @@ function PanelSupervisor() {
               ))}
 
             <button onClick={() => setMostrarModalAsignar(false)}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+      {mostrarModalPlan && ( //información de "Ver detalles" del modulo plan de trabajo
+        <div className="modal-overlay">
+          <div className="modal-contenido">
+            <h3>Detalle del Plan</h3>
+
+            <p><strong>ID Plan:</strong> {planSeleccionado?.idPlanTrabajo}</p>
+            <p><strong>Estado:</strong> {planSeleccionado?.estado}</p>
+            <p><strong>Repartidor:</strong> {planSeleccionado?.nombre}</p>
+
+            <h4>Ordenes asociadas</h4>
+
+            <div className="contenedor-tarjetas">
+              {ordenesDelPlan.length > 0 ? (
+                ordenesDelPlan.map((orden) => (
+                  <div key={orden.idOrden} className="tarjeta-orden">
+                    <p><strong>ID:</strong> {orden.idOrden}</p>
+                    <p><strong>Cliente:</strong> {orden.nombreCliente}</p>
+                    <p><strong>Dirección:</strong> {orden.direccion}</p>
+                    <p><strong>Estado:</strong> {orden.estado}</p>
+                  </div>
+                ))
+              ) : (
+                <p>No hay ordenes asociadas</p>
+              )}
+            </div>
+
+            <button onClick={() => setMostrarModalPlan(false)}>
               Cerrar
             </button>
           </div>
