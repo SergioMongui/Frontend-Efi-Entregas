@@ -16,15 +16,21 @@ function PanelSupervisor() {
   const [ordenesGuardadas, setOrdenesGuardadas] = useState([]);
   const [listaUsuarios, setListaUsuarios] = useState([]);
   const [planes, setPlanes] = useState([]);
-  const [filtroPlan, setFiltroPlan] = useState("");
+
+  //Filtros en Historico Planes de trabajo 
+  const [filtroIdPlanHist, setFiltroIdPlanHist] = useState("");
+  const [filtroRepartidorHist, setFiltroRepartidorHist] = useState("");
+  const [filtroFechaHist, setFiltroFechaHist] = useState("");
+
   //Para la eliminacion de tarjetas de ordenes en administrador
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
   const [ordenAEliminar, setOrdenAEliminar] = useState(null);
   const [motivoEliminacion, setMotivoEliminacion] = useState("");
 
-  //Filtros de estados en historico supervisor
+  //Filtros en historico ordenes 
   const [filtroEstado, setFiltroEstado] = useState("");
   const [filtroId, setFiltroId] = useState("");
+  const [filtroPlan, setFiltroPlan] = useState("");
 
   //Asignación
   const [ordenesSeleccionadas, setOrdenesSeleccionadas] = useState([]);
@@ -123,8 +129,6 @@ function PanelSupervisor() {
     );
   };
 
-
-
   const guardarRol = async (usuario) => {
     try {
       if (usuario.idUsuario === datosPerfil.idUsuario) {
@@ -162,7 +166,7 @@ function PanelSupervisor() {
     setModoEdicion(false);
   };
 
-  //Leer archivo Excel y convertirlo en datos de órdenes
+  //Leer archivo Excel y convertirlo en datos de ordenes
   const handleArchivoExcel = (e) => {
     console.log("Archivo detectado");
     const archivo = e.target.files[0];
@@ -173,6 +177,7 @@ function PanelSupervisor() {
 
     const lector = new FileReader();
 
+    //Lectura de archivo de excel
     lector.onload = async (evento) => {
       console.log("Archivo leído correctamente");
       const datos = new Uint8Array(evento.target.result);
@@ -301,29 +306,31 @@ function PanelSupervisor() {
               </thead>
 
               <tbody>
-                {planes.map(plan => (
+                {planes
+                  .filter((plan) => plan.estado === "ACTIVO")
+                  .map(plan => (
 
-                  <tr key={plan.idPlanTrabajo}>
-                    <td>{plan.idPlanTrabajo}</td>
-                    <td>{plan.estado}</td>
-                    <td>{plan.nombre}</td>
-                    <td>{plan.telefono}</td>
-                    <td>{plan.email}</td>
-                    <td>{new Date(plan.fecha).toLocaleString()}</td>
-                    <td>
-                      <button
-                        style={{ width: "100%" }}
-                        onClick={() => {
-                          setPlanSeleccionado(plan);
-                          setMostrarModalPlan(true);
-                        }}
-                      >
-                        Ver detalles
-                      </button>
-                    </td>
-                  </tr>
+                    <tr key={plan.idPlanTrabajo}>
+                      <td>{plan.idPlanTrabajo}</td>
+                      <td>{plan.estado}</td>
+                      <td>{plan.nombre}</td>
+                      <td>{plan.telefono}</td>
+                      <td>{plan.email}</td>
+                      <td>{new Date(plan.fecha).toLocaleString()}</td>
+                      <td>
+                        <button
+                          style={{ width: "100%" }}
+                          onClick={() => {
+                            setPlanSeleccionado(plan);
+                            setMostrarModalPlan(true);
+                          }}
+                        >
+                          Ver detalles
+                        </button>
+                      </td>
+                    </tr>
 
-                ))}
+                  ))}
               </tbody>
             </table>
 
@@ -479,7 +486,107 @@ function PanelSupervisor() {
             </div>
           </div>
         );
-      default:
+
+      case "historicoPlanes":
+        return (
+          <div className="contenido-panel">
+            <h2 className="titulo-perfil">Histórico de Planes de Trabajo</h2>
+
+            <div style={{ marginBottom: "15px" }}>
+              <input
+                type="text"
+                placeholder="Buscar por ID Plan"
+                value={filtroIdPlanHist}
+                onChange={(e) => setFiltroIdPlanHist(e.target.value)}
+              />
+
+              <input
+                type="text"
+                placeholder="Buscar por repartidor"
+                value={filtroRepartidorHist}
+                onChange={(e) => setFiltroRepartidorHist(e.target.value)}
+                style={{ marginLeft: "10px" }}
+              />
+
+              <input
+                type="date"
+                value={filtroFechaHist}
+                onChange={(e) => setFiltroFechaHist(e.target.value)}
+                style={{ marginLeft: "10px" }}
+              />
+            </div>
+            <table border={"1"} style={{ width: "100%" }}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Estado</th>
+                  <th>Repartidor</th>
+                  <th>Teléfono</th>
+                  <th>Email</th>
+                  <th>Fecha asignación</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {planes
+                  .filter((plan) => plan.estado === "COMPLETADA")
+
+                  // filtro por ID
+                  .filter((plan) =>
+                    filtroIdPlanHist === ""
+                      ? true
+                      : plan.idPlanTrabajo.toString().includes(filtroIdPlanHist)
+                  )
+
+                  // filtro por repartidor
+                  .filter((plan) =>
+                    filtroRepartidorHist === ""
+                      ? true
+                      : plan.nombre.toLowerCase().includes(filtroRepartidorHist.toLowerCase())
+                  )
+
+                  // filtro por fecha
+                  .filter((plan) => {
+                    if (filtroFechaHist === "") return true;
+
+                    //Utilizar fechas locales
+                    const fechaObj = new Date(plan.fecha);
+
+                    const año = fechaObj.getFullYear();
+                    const mes = String(fechaObj.getMonth() + 1).padStart(2, "0");
+                    const dia = String(fechaObj.getDate()).padStart(2, "0");
+
+                    const fechaPlan = `${año}-${mes}-${dia}`;
+                    return fechaPlan === filtroFechaHist;
+                  })
+
+                  .map((plan) => (
+                    <tr key={plan.idPlanTrabajo}>
+                      <td>{plan.idPlanTrabajo}</td>
+                      <td>{plan.estado}</td>
+                      <td>{plan.nombre}</td>
+                      <td>{plan.telefono}</td>
+                      <td>{plan.email}</td>
+                      <td>{new Date(plan.fecha).toLocaleString()}</td>
+                      <td>
+                        <button
+                          style={{ width: "100%" }}
+                          onClick={() => {
+                            setPlanSeleccionado(plan);
+                            setMostrarModalPlan(true);
+                          }}
+                        >
+                          Ver detalles
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        );
+
         return null;
     }
   };
@@ -519,7 +626,13 @@ function PanelSupervisor() {
           className={seccionActiva === "historico" ? "activo" : ""}
           onClick={() => setSeccionActiva("historico")}
         >
-          Histórico
+          Histórico Ordenes
+        </button>
+        <button
+          className={seccionActiva === "historicoPlanes" ? "activo" : ""}
+          onClick={() => setSeccionActiva("historicoPlanes")}
+        >
+          Histórico Planes de Trabajo
         </button>
       </nav>
 
